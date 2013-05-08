@@ -131,7 +131,10 @@ relay(Pid, Tx, Msg) ->
 ack({Pid, Tx}, Msg) ->
    % backward compatible with gen_server:reply
    Msg0 = {Tx, Msg},
-   try erlang:send(Pid, Msg0) catch _:_ -> Msg0 end.
+   try erlang:send(Pid, Msg0) catch _:_ -> Msg0 end;
+
+ack(_, _Msg) ->
+   undefined.
 
 
 
