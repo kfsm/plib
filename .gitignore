@@ -1,0 +1,11 @@
+*.*~
+*.log
+*.aux
+*.beam
+*.dump
+*.tag.gz
+*.tgz
+ebin/
+.eunit/
+rebar
+*.sublime-*

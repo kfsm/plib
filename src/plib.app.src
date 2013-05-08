@@ -1,0 +1,15 @@
+{application, plib,
+   [
+      {description, "process library"},
+      {vsn,         "1.0.0"},
+      {modules,     [
+         plib
+      ]},
+      {registered,  []},
+      {applications,[
+         kernel,
+         stdlib
+      ]},
+      {env, []}
+   ]
+}.  
