@@ -28,6 +28,7 @@ kfsm_test_() ->
       [
           {"call", fun call/0}
          ,{"cast", fun cast/0}
+         ,{"send", fun send/0}
       ]
    }.
 
@@ -44,6 +45,11 @@ cast() ->
    Ref = plib:cast(echo, ping),
    receive {Ref, ping} -> ok end.
 
+send() ->
+   Ref = plib:send(echo, ping),
+   receive ping -> ok end.
+
+
 echo() ->
    erlang:register(echo, self()),
    loop().
@@ -54,6 +60,9 @@ loop() ->
          plib:ack(Tx, Msg),
          loop();
       {cast, Tx, Msg} ->
+         plib:ack(Tx, Msg),
+         loop();
+      {send, Tx, Msg} ->
          plib:ack(Tx, Msg),
          loop()
    end.

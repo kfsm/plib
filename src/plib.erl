@@ -20,7 +20,7 @@
 -module(plib).
 
 -export([
-   node/1, cast/2, call/2, call/3, relay/3, ack/2
+   node/1, cast/2, call/2, call/3, send/2, relay/3, ack/2
 ]).
 
 -type(process() :: pid() | {atom(), node()} | atom()).
@@ -59,6 +59,13 @@ cast(Pid, Msg) ->
    Tx = erlang:make_ref(),
    try erlang:send(Pid,  {cast, {self(), Tx}, Msg}, [noconnect]) catch _:_ -> Msg end,
    Tx.
+
+%%
+%% send asynchronous message to process
+-spec(send/2 :: (process(), any()) -> reference()).
+
+send(Pid, Msg) ->
+   try erlang:send(Pid,  {send, self(), Msg}, [noconnect]) catch _:_ -> Msg end.
 
 %%
 %% make synchronous request to process
@@ -128,10 +135,16 @@ relay(Pid, Tx, Msg) ->
 %% acknowledge transaction
 -spec(ack/2 :: (tx(), any()) -> any()).
 
-ack({Pid, Tx}, Msg) ->
+ack({Pid, Tx}, Msg)
+ when is_pid(Pid) ->
    % backward compatible with gen_server:reply
    Msg0 = {Tx, Msg},
    try erlang:send(Pid, Msg0) catch _:_ -> Msg0 end;
+
+ack(Pid, Msg)
+ when is_pid(Pid) ->
+   % backward compatible with gen_server:reply
+   try erlang:send(Pid, Msg) catch _:_ -> Msg end;
 
 ack(_, _Msg) ->
    undefined.
