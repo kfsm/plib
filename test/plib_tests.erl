@@ -56,13 +56,7 @@ echo() ->
 
 loop() ->
    receive
-      {call, Tx, Msg} -> 
-         plib:ack(Tx, Msg),
-         loop();
-      {cast, Tx, Msg} ->
-         plib:ack(Tx, Msg),
-         loop();
-      {send, Tx, Msg} ->
+      {'$req', Tx, Msg} -> 
          plib:ack(Tx, Msg),
          loop()
    end.

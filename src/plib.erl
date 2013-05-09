@@ -52,20 +52,20 @@ node(RegName)
    end.
 
 %%
-%% cast asynchronous message to process
+%% cast asynchronous request to process
 -spec(cast/2 :: (process(), any()) -> reference()).
 
 cast(Pid, Msg) ->
    Tx = erlang:make_ref(),
-   try erlang:send(Pid,  {cast, {self(), Tx}, Msg}, [noconnect]) catch _:_ -> Msg end,
+   try erlang:send(Pid,  {'$req', {self(), Tx}, Msg}, [noconnect]) catch _:_ -> Msg end,
    Tx.
 
 %%
-%% send asynchronous message to process
+%% send asynchronous and opaque request to process
 -spec(send/2 :: (process(), any()) -> reference()).
 
 send(Pid, Msg) ->
-   try erlang:send(Pid,  {send, self(), Msg}, [noconnect]) catch _:_ -> Msg end.
+   try erlang:send(Pid,  {'$req', self(), Msg}, [noconnect]) catch _:_ -> Msg end.
 
 %%
 %% make synchronous request to process
@@ -87,7 +87,7 @@ call(Pid, Msg, Timeout) ->
 
 do_call(Tx, Pid, Msg, Timeout) ->
    Node = plib:node(Pid),
-   catch erlang:send(Pid, {call, {self(), Tx}, Msg}, [noconnect]),
+   catch erlang:send(Pid, {'$req', {self(), Tx}, Msg}, [noconnect]),
    receive
       {Tx, Reply} ->
          erlang:demonitor(Tx, [flush]),
@@ -110,7 +110,7 @@ fb_call(Pid, Msg, Timeout) ->
          exit({nodedown, Node})
    after 0 -> 
       Tx = erlang:make_ref(),
-      catch erlang:send(Pid, {call, {self(), Tx}, Msg}, [noconnect]),
+      catch erlang:send(Pid, {'$req', {self(), Tx}, Msg}, [noconnect]),
       receive
          {Tx, Reply} ->
             monitor_node(Node, false),
@@ -125,11 +125,11 @@ fb_call(Pid, Msg, Timeout) ->
    end.
 
 %%
-%% relay on-going transaction to other process
+%% relay on-going request to other process
 -spec(relay/3 :: (process(), tx(), any()) -> any()). 
 
 relay(Pid, Tx, Msg) ->
-   try erlang:send(Pid,  {cast, Tx, Msg}, [noconnect]) catch _:_ -> Msg end.
+   try erlang:send(Pid,  {'$req', Tx, Msg}, [noconnect]) catch _:_ -> Msg end.
 
 %%
 %% acknowledge transaction
@@ -143,10 +143,9 @@ ack({Pid, Tx}, Msg)
 
 ack(Pid, Msg)
  when is_pid(Pid) ->
-   % backward compatible with gen_server:reply
    try erlang:send(Pid, Msg) catch _:_ -> Msg end;
 
-ack(_, _Msg) ->
+ack(_, _) ->
    undefined.
 
 
