@@ -28,7 +28,7 @@ kfsm_test_() ->
       [
           {"call", fun call/0}
          ,{"cast", fun cast/0}
-         ,{"send", fun send/0}
+         ,{"emit", fun emit/0}
       ]
    }.
 
@@ -45,8 +45,8 @@ cast() ->
    Ref = plib:cast(echo, ping),
    receive {Ref, ping} -> ok end.
 
-send() ->
-   Ref = plib:send(echo, ping),
+emit() ->
+   Ref = plib:emit(echo, ping),
    receive ping -> ok end.
 
 

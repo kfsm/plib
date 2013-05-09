@@ -20,7 +20,7 @@
 -module(plib).
 
 -export([
-   node/1, cast/2, call/2, call/3, send/2, relay/3, ack/2
+   node/1, cast/2, call/2, call/3, emit/2, send/2, relay/3, ack/2
 ]).
 
 -type(process() :: pid() | {atom(), node()} | atom()).
@@ -61,11 +61,18 @@ cast(Pid, Msg) ->
    Tx.
 
 %%
-%% send asynchronous and opaque request to process
+%% emit asynchronous request to process with pid of originator
+-spec(emit/2 :: (process(), any()) -> reference()).
+
+emit(Pid, Msg) ->
+   try erlang:send(Pid,  {'$req', self(), Msg}, [noconnect]) catch _:_ -> Msg end.
+
+%%
+%%
 -spec(send/2 :: (process(), any()) -> reference()).
 
 send(Pid, Msg) ->
-   try erlang:send(Pid,  {'$req', self(), Msg}, [noconnect]) catch _:_ -> Msg end.
+   try erlang:send(Pid,  {'$req', undefined, Msg}, [noconnect]) catch _:_ -> Msg end.
 
 %%
 %% make synchronous request to process
@@ -145,7 +152,7 @@ ack(Pid, Msg)
  when is_pid(Pid) ->
    try erlang:send(Pid, Msg) catch _:_ -> Msg end;
 
-ack(_, _) ->
+ack(_, _Msg) ->
    undefined.
 
 
