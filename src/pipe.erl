@@ -20,8 +20,8 @@
 -module(pipe).
 
 -export([
-   castA/2, castB/2, cast/2,
-   sendA/2, sendB/2, send/2
+   '<<'/2, '>>'/2, cast/2,
+   '<'/2,  '>'/2,  send/2
 ]).
 
 -type(process() :: pid() | {atom(), node()} | atom()).
@@ -31,10 +31,10 @@
 %% cast asynchronous request to piped-process
 -spec(cast/2  :: (process() | tx(), any()) -> reference()).
 
-castA({pipe, A, _}, Msg) ->
+'<<'({pipe, A, _}, Msg) ->
    pipe:cast(A, Msg).
 
-castB({pipe, _, B}, Msg) ->
+'>>'({pipe, _, B}, Msg) ->
    pipe:cast(B, Msg).
 
 cast({Pid, TxA}, Msg)
@@ -52,10 +52,10 @@ cast(Pid, Msg) ->
 %% send asynchronous request to process 
 -spec(send/2 :: (process() | tx(), any()) -> reference()).
 
-sendA({pipe, A, _}, Msg) ->
+'<'({pipe, A, _}, Msg) ->
    pipe:send(A, Msg).
 
-sendB({pipe, _, B}, Msg) ->
+'>'({pipe, _, B}, Msg) ->
    pipe:send(B, Msg).
 
 send({Pid, Tx}, Msg) ->
