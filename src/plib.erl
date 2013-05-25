@@ -55,6 +55,8 @@ node(RegName)
 %% cast asynchronous request to process
 -spec(cast/2 :: (process(), any()) -> reference()).
 
+cast({pipe, _, B}, Msg) ->
+   plib:cast(B, Msg);
 cast(Pid, Msg) ->
    Tx = erlang:make_ref(),
    try erlang:send(Pid,  {'$req', {self(), Tx}, Msg}, [noconnect]) catch _:_ -> Msg end,
@@ -64,6 +66,8 @@ cast(Pid, Msg) ->
 %% emit asynchronous request to process with pid of originator
 -spec(emit/2 :: (process(), any()) -> reference()).
 
+emit({pipe, _, B}, Msg) ->
+   plib:emit(B, Msg);
 emit(Pid, Msg) ->
    try erlang:send(Pid,  {'$req', self(), Msg}, [noconnect]) catch _:_ -> Msg end.
 
@@ -71,6 +75,8 @@ emit(Pid, Msg) ->
 %% send asynchronous request to process 
 -spec(send/2 :: (process(), any()) -> reference()).
 
+send({pipe, _, B}, Msg) ->
+   plib:send(B, Msg);
 send(Pid, Msg) ->
    try erlang:send(Pid,  {'$req', undefined, Msg}, [noconnect]) catch _:_ -> Msg end.
 
@@ -79,9 +85,13 @@ send(Pid, Msg) ->
 -spec(call/2 :: (process(), any()) -> any()).
 -spec(call/3 :: (process(), any(), timeout()) -> any()).
 
+call({pipe, _, B}, Msg) ->
+   plib:call(B, Msg);
 call(Pid, Msg) ->
    plib:call(Pid, Msg, 5000).
 
+call({pipe, _, B}, Msg, Timeout) ->
+   plib:call(B, Msg, Timeout);
 call(Pid, Msg, Timeout) ->
    % inspired by gen:call(...) from OTP
    try erlang:monitor(process, Pid) of
@@ -142,6 +152,9 @@ relay(Pid, Tx, Msg) ->
 %% acknowledge transaction
 -spec(ack/2 :: (tx(), any()) -> any()).
 
+ack({pipe, A, _}, Msg) ->
+   plib:ack(A, Msg);
+   
 ack({Pid, Tx}, Msg)
  when is_pid(Pid), is_reference(Tx) ->
    % backward compatible with gen_server:reply
