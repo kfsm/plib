@@ -16,7 +16,7 @@
 %%   limitations under the License.
 %%
 %% @description
-%%    alternative process communication, support asynchronous communication
+%%    alternative process communication protocol
 -module(plib).
 
 -export([
@@ -69,16 +69,16 @@ cast(Pid, Msg) ->
 emit({pipe, _, Pid}, Msg) ->
    plib:emit(Pid, Msg);
 emit(Pid, Msg) ->
-   try erlang:send(Pid,  {'$req', self(), Msg}, [noconnect]) catch _:_ -> Msg end.
+   try erlang:send(Pid,  {'$req', {self(), emit}, Msg}, [noconnect]) catch _:_ -> Msg end.
 
 %%
-%%
+%% send asynchronous request to process 
 -spec(send/2 :: (process(), any()) -> reference()).
 
 send({pipe, _, Pid}, Msg) ->
    plib:send(Pid, Msg);
 send(Pid, Msg) ->
-   try erlang:send(Pid,  {'$req', undefined, Msg}, [noconnect]) catch _:_ -> Msg end.
+   try erlang:send(Pid,  {'$req', {self(), send}, Msg}, [noconnect]) catch _:_ -> Msg end.
 
 %%
 %% make synchronous request to process
@@ -157,10 +157,14 @@ ack({pipe, Pid, _}, Msg) ->
    plib:ack(Pid, Msg);
 
 ack({Pid, Tx}, Msg)
- when is_pid(Pid) ->
+ when is_pid(Pid), is_reference(Tx) ->
    % backward compatible with gen_server:reply
    Msg0 = {Tx, Msg},
    try erlang:send(Pid, Msg0) catch _:_ -> Msg0 end;
+
+ack({Pid, emit}, Msg)
+ when is_pid(Pid) ->
+   try erlang:send(Pid, Msg) catch _:_ -> Msg end;
 
 ack(Pid, Msg)
  when is_pid(Pid) ->
