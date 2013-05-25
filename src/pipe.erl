@@ -20,11 +20,16 @@
 -module(pipe).
 
 -export([
-   cast/2, send/2
+   '<<'/1, '>>'/1, cast/2, send/2
 ]).
 -type(process() :: pid() | {atom(), node()} | atom()).
 -type(tx()      :: {pid(), reference()}).
 
+
+'<<'({pipe, A, _}) ->
+   A.
+'>>'({pipe, _, B}) ->
+   B.
 
 %%
 %% cast asynchronous request to piped-process
