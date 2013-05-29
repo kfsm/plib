@@ -84,7 +84,11 @@ b({pipe, _, B}, Msg)
  when is_function(B) ->
    send(B(Msg), Msg).
 
-send(Pid, Msg) ->
-   try erlang:send(Pid,  {'$pipe', self(), Msg}, [noconnect]) catch _:_ -> Msg end.
+send(Pid, Msg)
+ when is_pid(Pid) ->
+   try erlang:send(Pid,  {'$pipe', self(), Msg}, [noconnect]) catch _:_ -> Msg end;
 
+send({Pid, Tx}, Msg) ->
+   % gen_server backward compatibility
+   try erlang:send(Pid,  {'$pipe', self(), {Tx, Msg}}, [noconnect]) catch _:_ -> Msg end.
 
