@@ -32,7 +32,7 @@
 
 -export([
    make/1, make/2, make/3,
-   a/2, '<'/2,  b/2, '>'/2
+   a/2, '<'/2,  b/2, '>'/2, send/2
 ]).
 
 -type(pipe() :: {pipe, any(), any()}).
