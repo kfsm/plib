@@ -16,50 +16,61 @@
 %%   limitations under the License.
 %%
 %% @description
-%%   process pipe protocol
+%%   pipeline protocol defines message semantic 
+%%
+%%   a pipeline is a series of Erlang processes through which messages flows.
+%%   the pipeline organizes complex processing tasks through several simple 
+%%   Erlang processes, which are called 'stages'. Each stage in a pipeline 
+%%   receives message from the pipeline, processes them in some way, and
+%%   sends transformed message back to the pipeline. 
+%%
+%%   the pipe is defined as a tuple containing either identities of
+%%   predecessor / source (a) and successor / sink (b) stages or 
+%%   computation to discover them based on message content.
+%%   (a)--(stage)-->(b)
 -module(pipe).
 
 -export([
-   '<<'/2, '>>'/2, cast/2,
-   '<'/2,  '>'/2,  send/2
+   make/1, make/2, 
+   a/2, '<'/2,  b/2, '>'/2
 ]).
 
--type(process() :: pid() | {atom(), node()} | atom()).
--type(tx()      :: {pid(), reference()}).
+-type(pipe() :: {pipe, any(), any()}).
 
 %%
-%% cast asynchronous request to piped-process
--spec(cast/2  :: (process() | tx(), any()) -> reference()).
+%% make pipe
+-spec(make/1 :: (pid()) -> pipe()).
+-spec(make/2 :: (pid(), pid()) -> pipe()).
 
-'<<'({pipe, A, _}, Msg) ->
-   pipe:cast(A, Msg).
+make(B) ->
+   make(self(), B).
 
-'>>'({pipe, _, B}, Msg) ->
-   pipe:cast(B, Msg).
-
-cast({Pid, TxA}, Msg)
- when is_pid(Pid), is_reference(TxA) ->
-   TxB = erlang:make_ref(),
-   try erlang:send(Pid, {'$pipe', {self(), TxB}, {TxA, Msg}}, [noconnect]) catch _:_ -> Msg end,
-   TxB;
-
-cast(Pid, Msg) ->
-   Tx = erlang:make_ref(),
-   try erlang:send(Pid,  {'$pipe', {self(), Tx}, Msg}, [noconnect]) catch _:_ -> Msg end,
-   Tx.
+make(A, B) ->
+   try erlang:send(B, {'$pipe', a, A}, [noconnect]) catch _:_ -> ok end,
+   try erlang:send(A, {'$pipe', b, B}, [noconnect]) catch _:_ -> ok end,
+   {pipe, A, B}.
 
 %%
-%% send asynchronous request to process 
--spec(send/2 :: (process() | tx(), any()) -> reference()).
+%% send message through pipeline 
+-spec(a/2 :: (pipe(), any()) -> ok).
+-spec(b/2 :: (pipe(), any()) -> ok).
 
-'<'({pipe, A, _}, Msg) ->
-   pipe:send(A, Msg).
+'<'(Pipe, Msg) -> a(Pipe, Msg).
+'>'(Pipe, Msg) -> b(Pipe, Msg).
 
-'>'({pipe, _, B}, Msg) ->
-   pipe:send(B, Msg).
+a({pipe, A, _}, Msg) 
+ when not is_function(A) ->
+   send(A, Msg);
+a({pipe, A, _}, Msg)
+ when is_function(A) ->
+   send(A(Msg), Msg).
 
-send({Pid, Tx}, Msg) ->
-   try erlang:send(Pid,  {'$pipe', self(), {Tx, Msg}}, [noconnect]) catch _:_ -> Msg end;
+b({pipe, _, B}, Msg) 
+ when not is_function(B) ->
+   send(B, Msg);
+b({pipe, _, B}, Msg)
+ when is_function(B) ->
+   send(B(Msg), Msg).
 
 send(Pid, Msg) ->
    try erlang:send(Pid,  {'$pipe', self(), Msg}, [noconnect]) catch _:_ -> Msg end.
