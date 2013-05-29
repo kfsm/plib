@@ -31,7 +31,7 @@
 -module(pipe).
 
 -export([
-   make/1, make/2, 
+   make/1, make/2, make/3,
    a/2, '<'/2,  b/2, '>'/2
 ]).
 
@@ -46,9 +46,21 @@ make(B) ->
    make(self(), B).
 
 make(A, B) ->
-   try erlang:send(B, {'$pipe', a, A}, [noconnect]) catch _:_ -> ok end,
-   try erlang:send(A, {'$pipe', b, B}, [noconnect]) catch _:_ -> ok end,
+   try erlang:send(B, {'$pipe', '$a', A}, [noconnect]) catch _:_ -> ok end,
+   try erlang:send(A, {'$pipe', '$b', B}, [noconnect]) catch _:_ -> ok end,
    {pipe, A, B}.
+
+make(Src, A, B)
+ when Src =:= A ->
+   {pipe, A, B};
+make(Src, A, B)
+ when Src =:= B ->
+   {pipe, B, A};
+make(Src, undefined, B) ->
+   {pipe, Src, B};
+make(Src, A, _B) ->
+   {pipe, Src, A}.
+
 
 %%
 %% send message through pipeline 
