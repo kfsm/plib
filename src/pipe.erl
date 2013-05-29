@@ -42,6 +42,10 @@
 -spec(make/1 :: (pid()) -> pipe()).
 -spec(make/2 :: (pid(), pid()) -> pipe()).
 
+make(P) 
+ when is_list(P) ->
+   lists:foldl(fun(B, A) -> make(A, B), B end, hd(P), tl(P));
+
 make(B) ->
    make(self(), B).
 
