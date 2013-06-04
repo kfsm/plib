@@ -31,8 +31,9 @@
 -module(pipe).
 
 -export([
-   make/1, make/2, make/3,
-   a/2, '<'/2,  b/2, '>'/2, send/2
+   make/1, make/2, make/3, bind/3,
+   a/2, '<'/2,  b/2, '>'/2, 
+   send/2, recv/0, recv/1
 ]).
 
 -type(pipe() :: {pipe, any(), any()}).
@@ -50,9 +51,9 @@ make(B) ->
    make(self(), B).
 
 make(A, B) ->
-   try erlang:send(B, {'$pipe', '$a', A}, [noconnect]) catch _:_ -> ok end,
-   try erlang:send(A, {'$pipe', '$b', B}, [noconnect]) catch _:_ -> ok end,
-   {pipe, A, B}.
+   bind(B, a, A),
+   bind(A, b, B),
+   {pipe,  A, B}.
 
 make(Src, A, B)
  when Src =:= A ->
@@ -64,6 +65,14 @@ make(Src, undefined, B) ->
    {pipe, Src, B};
 make(Src, A, _B) ->
    {pipe, Src, A}.
+
+%%
+%%
+bind(Pid, a, A) ->
+   try erlang:send(Pid, {'$pipe', '$a', A}, [noconnect]), ok catch _:_ -> ok end;
+
+bind(Pid, b, B) ->
+   try erlang:send(Pid, {'$pipe', '$b', B}, [noconnect]), ok catch _:_ -> ok end.
 
 
 %%
@@ -90,9 +99,25 @@ b({pipe, _, B}, Msg)
 
 send(Pid, Msg)
  when is_pid(Pid) ->
-   try erlang:send(Pid,  {'$pipe', self(), Msg}, [noconnect]) catch _:_ -> Msg end;
+   try 
+      erlang:send(Pid,  {'$pipe', self(), Msg}, [noconnect]), 
+      erlang:yield(),
+      Msg 
+   catch _:_ -> 
+      Msg 
+   end;
 
-send({Pid, Tx}, Msg) ->
-   % gen_server backward compatibility
-   try erlang:send(Pid,  {'$pipe', self(), {Tx, Msg}}, [noconnect]) catch _:_ -> Msg end.
+send(undefined, Msg) ->
+   Msg.
+
+recv() ->
+   recv(5000).
+
+recv(Timeout) ->
+   receive
+   {'$pipe', _Pid, Msg} ->
+      Msg
+   after Timeout ->
+      exit(timeout)
+   end.
 
