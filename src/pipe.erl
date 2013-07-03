@@ -33,7 +33,7 @@
 -export([
    make/1, make/2, make/3, bind/3,
    a/2, '<'/2,  b/2, '>'/2, 
-   send/2, recv/0, recv/1
+   send/2, relay/3, recv/0, recv/1
 ]).
 
 -type(pipe() :: {pipe, any(), any()}).
@@ -97,7 +97,7 @@ b({pipe, _, B}, Msg)
  when is_function(B) ->
    send(B(Msg), Msg).
 
-send(Pid, Msg)
+send(Pid, Msg) 
  when is_pid(Pid) ->
    try 
       erlang:send(Pid,  {'$pipe', self(), Msg}, [noconnect]), 
@@ -109,6 +109,23 @@ send(Pid, Msg)
 
 send(undefined, Msg) ->
    Msg.
+
+%%
+%% relay pipe message on behalf of other process
+relay(Pid, A, Msg)
+ when is_pid(Pid) ->
+   try 
+      erlang:send(Pid,  {'$pipe', A, Msg}, [noconnect]), 
+      erlang:yield(),
+      Msg 
+   catch _:_ -> 
+      Msg 
+   end;
+
+relay(undefined, _, Msg) ->
+   Msg.
+
+
 
 recv() ->
    recv(5000).
