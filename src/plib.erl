@@ -20,7 +20,15 @@
 -module(plib).
 
 -export([
-   node/1, cast/2, call/2, call/3, emit/2, send/2, relay/3, ack/2, pid/1
+   node/1, 
+   cast/2, 
+   emit/2, 
+   send/2, 
+   call/2, 
+   call/3, 
+   relay/3, 
+   ack/2, 
+   pid/1
 ]).
 
 -type(process() :: pid() | {atom(), node()} | atom()).
@@ -34,22 +42,19 @@ node(Pid)
  when is_pid(Pid) ->
    erlang:node(Pid);
 
-node({global, _}=RegName) ->
-   case erlang:whereis(RegName) of
-      undefined -> throw(noproc);
-      Pid       -> erlang:node(Pid)
-   end;
-
 node({_, Node})
  when is_atom(Node) ->
    Node;
 
-node(RegName)
- when is_atom(RegName) ->
-   case erlang:whereis(RegName) of
-      undefined -> throw(noproc);
-      Pid       -> erlang:node(Pid)
-   end.
+node({global, Name}) ->
+   plib:node(global:whereis_name(Name));
+
+node(undefined) ->
+   exit(noproc);
+
+node(Name)
+ when is_atom(Name) ->
+   plib:node(erlang:whereis(Name)).
 
 %%
 %% cast asynchronous request to process
