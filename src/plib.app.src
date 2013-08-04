@@ -1,7 +1,7 @@
 {application, plib,
    [
       {description, "process library"},
-      {vsn,         "2.5.0"},
+      {vsn,         "2.6.0"},
       {modules,     [
          plib
       ]},
