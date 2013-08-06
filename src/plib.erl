@@ -127,6 +127,9 @@ do_call(Tx, Pid, Req, Msg, Timeout) ->
       {Tx, Reply} ->
          erlang:demonitor(Tx, [flush]),
          Reply;
+      {relay, Tx, RelayPid, RelayReq, RelayMsg} ->
+         erlang:demonitor(Tx, [flush]),
+         call(RelayPid, RelayReq, RelayMsg, Timeout);
       {'DOWN', Tx, _, _, noconnection} ->
          exit({nodedown, Node});
       {'DOWN', Tx, _, _, Reason} ->
@@ -150,6 +153,9 @@ fb_call(Pid, Req, Msg, Timeout) ->
          {Tx, Reply} ->
             monitor_node(Node, false),
             Reply;
+         {relay, Tx, RelayPid, RelayReq, RelayMsg} ->
+            erlang:demonitor(Tx, [flush]),
+            call(RelayPid, RelayReq, RelayMsg, Timeout);
          {nodedown, Node} ->
             monitor_node(Node, false),
             exit({nodedown, Node})
@@ -166,6 +172,13 @@ fb_call(Pid, Req, Msg, Timeout) ->
 
 relay(Pid, Tx, Msg) ->
    relay(Pid, '$req', Tx, Msg).
+
+relay(Pid, Req, {Cli, Tx}, Msg)
+ when is_pid(Cli), is_reference(Tx) ->
+   %% synchronous message relay requires re-sync of Tx Reference at client-side
+   %% otherwise death of destination process remain unnoticeable by client 
+   %% Tx monitor has to be re-set
+   try erlang:send(Cli, {relay, Tx, Pid, Req, Msg}) catch _:_ -> Msg end;
 
 relay(Pid, Req, Tx, Msg) ->   
    try erlang:send(Pid,  {Req, Tx, Msg}, [noconnect]) catch _:_ -> Msg end.
