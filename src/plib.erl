@@ -33,7 +33,8 @@
    relay/3, 
    relay/4, 
    ack/2, 
-   pid/1
+   pid/1,
+   tx/1
 ]).
 
 -type(process() :: pid() | {atom(), node()} | atom()).
@@ -205,7 +206,7 @@ ack(_, _Msg) ->
 
 %%
 %% extract transaction pid
--spec(pid/1 :: (tx()) -> any()).
+-spec(pid/1 :: (tx()) -> pid() | undefined).
 
 pid({Pid, _Tx})
  when is_pid(Pid) ->
@@ -218,4 +219,14 @@ pid(Pid)
 pid(_) ->
    undefined.
 
+%%
+%% extract transaction reference
+-spec(tx/1 :: (tx()) -> reference() | undefined).
+
+tx({_Pid, Tx})
+ when is_reference(Tx) ->
+   Tx;
+
+tx(_) ->
+   undefined.
 
