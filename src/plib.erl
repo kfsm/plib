@@ -34,7 +34,8 @@
    relay/4, 
    ack/2, 
    pid/1,
-   tx/1
+   tx/1,
+   type/1
 ]).
 
 -type(process() :: pid() | {atom(), node()} | atom()).
@@ -248,3 +249,21 @@ tx({Tx, _Pid})
 tx(_) ->
    undefined.
 
+%%
+%% check transaction type
+-spec(type/1 :: (tx()) -> call | cast | emit | send).
+
+type({Pid, _Tx})
+ when is_pid(Pid) ->
+   call;
+
+type({_Tx, Pid})
+ when is_pid(Pid) ->
+   cast;
+
+type(Pid)
+ when is_pid(Pid) ->
+   emit; 
+
+type(_) ->
+   send.
