@@ -73,7 +73,11 @@ cast(Pid, Msg) ->
 
 cast(Pid, Req, Msg) ->
    Tx = erlang:make_ref(),
-   try erlang:send(Pid,  {Req, {self(), Tx}, Msg}, [noconnect]) catch _:_ -> Msg end,
+   % tx signature of cast & call MUST differ due to relay feature
+   % relay of call message requires re-sync of monitor object
+   % relay decision making is based on tx signature 
+   % for simplicity position of pid & tx is changes at cast (this is opaque to client)
+   try erlang:send(Pid,  {Req, {Tx, self()}, Msg}, [noconnect]) catch _:_ -> Msg end,
    Tx.
 
 
@@ -197,6 +201,12 @@ ack({Pid, Tx}, Msg)
    Msg0 = {Tx, Msg},
    try erlang:send(Pid, Msg0) catch _:_ -> Msg0 end;
 
+ack({Tx, Pid}, Msg)
+ when is_pid(Pid), is_reference(Tx) ->
+   % backward compatible with gen_server:reply
+   Msg0 = {Tx, Msg},
+   try erlang:send(Pid, Msg0) catch _:_ -> Msg0 end;
+
 ack(Pid, Msg)
  when is_pid(Pid) ->
    try erlang:send(Pid, Msg) catch _:_ -> Msg end;
@@ -212,6 +222,10 @@ pid({Pid, _Tx})
  when is_pid(Pid) ->
    Pid;
 
+pid({_Tx, Pid})
+ when is_pid(Pid) ->
+   Pid;
+
 pid(Pid)
  when is_pid(Pid) ->
    Pid; 
@@ -224,6 +238,10 @@ pid(_) ->
 -spec(tx/1 :: (tx()) -> reference() | undefined).
 
 tx({_Pid, Tx})
+ when is_reference(Tx) ->
+   Tx;
+
+tx({Tx, _Pid})
  when is_reference(Tx) ->
    Tx;
 
