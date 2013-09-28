@@ -246,6 +246,10 @@ tx({Tx, _Pid})
  when is_reference(Tx) ->
    Tx;
 
+tx(Tx)
+ when is_reference(Tx) ->
+   Tx;
+
 tx(_) ->
    undefined.
 
