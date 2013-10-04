@@ -35,7 +35,8 @@
    ack/2, 
    pid/1,
    tx/1,
-   type/1
+   type/1,
+   uref/1
 ]).
 
 -type(process() :: pid() | {atom(), node()} | atom()).
@@ -271,3 +272,18 @@ type(Pid)
 
 type(_) ->
    send.
+
+%%
+%% universal transaction reference
+-spec(uref/1 :: (tx()) -> binary()).
+uref(Tx) ->
+   btoh(
+      crypto:sha(
+         erlang:term_to_binary({plib:pid(Tx), plib:tx(Tx)})
+      )
+   ).
+
+
+btoh(X) ->
+   << <<(if A < 10 -> $0 + A; A >= 10 -> $a + (A - 10) end):8>> || <<A:4>> <=X >>.
+
