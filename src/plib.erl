@@ -19,8 +19,10 @@
 %%    alternative process communication protocol
 -module(plib).
 
+-include("plib.hrl").
+
 -export([
-   node/1, 
+   node/1,
    cast/2, 
    cast/3,
    emit/2, 
@@ -64,6 +66,7 @@ node(undefined) ->
 node(Name)
  when is_atom(Name) ->
    plib:node(erlang:whereis(Name)).
+
 
 %%
 %% cast asynchronous request to process
@@ -278,7 +281,7 @@ type(_) ->
 -spec(uref/1 :: (tx()) -> binary()).
 uref(Tx) ->
    btoh(
-      crypto:sha(
+      crypto:hash(sha,
          erlang:term_to_binary({plib:pid(Tx), plib:tx(Tx)})
       )
    ).
